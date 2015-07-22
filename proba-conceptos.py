@@ -3,6 +3,7 @@
 import pygame
 import pygame.gfxdraw
 from pygame.locals import *
+import math
 
 #CONSTANTES
 
@@ -21,8 +22,28 @@ class punto:
 	def __init__(self,x,y):
 		self.x = x
 		self.y = y
+	def __add__(self,other):
+		return punto(self.x + other.x, self.y + other.y)
+	def __neg__(self):
+		return punto(-self.x,-self.y)
+	def __sub__(self,other):
+		return self + (-other)
+	def longitude(self):
+		return math.sqrt(self.x**2 + self.y**2)
+	def __mul__(self,n):
+		return punto(self.x*n,self.y*n)
+	def __div__(self,n):
+		return punto(self.x/n,self.y/n)
+	__truediv__ = __div__
 		
 punto_pj = punto(ANCHO_VENTANA/2 + MARCO, ALTO_VENTANA/2 + MARCO)
+
+class circulo:
+	def __init__(self,punto,radio):
+		self.punto = punto
+		self.radio = radio
+	
+bola_pj = circulo(punto_pj,RADIO_BOLA_PJ)
 
 #INICIAR PYGAME
 
@@ -38,17 +59,27 @@ lista_obj = [obj1,obj2,obj3]
 
 #FUNCION PARA COLISIONS COS OBJETOS
 
-def colision():
-	for r in lista_obj:
-		if punto_pj.x+RADIO_BOLA_PJ > r.left and punto_pj.x-RADIO_BOLA_PJ < r.left+r.width and punto_pj.y+RADIO_BOLA_PJ > r.top and punto_pj.y-RADIO_BOLA_PJ < r.top+r.height:
+def c_circulo_rect(circulo,rectangulo):
+	c_distancia_x = abs(circulo.punto.x - rectangulo.left - rectangulo.width/2)
+	c_distancia_y = abs(circulo.punto.y - rectangulo.top -  rectangulo.height/2)
+	if c_distancia_x > (rectangulo.width/2 + circulo.radio) or c_distancia_y > (rectangulo.height/2 + circulo.radio):
+		return False
+	if c_distancia_x <= rectangulo.width/2 or c_distancia_y <= rectangulo.height/2:
+		return True
+	corner_distancia = (c_distancia_x - rectangulo.width/2)**2 + (c_distancia_y - rectangulo.height/2)**2
+	return corner_distancia <= circulo.radio**2
+
+def colision(circulo,lista):
+	for r in lista:
+		if c_circulo_rect(circulo,r):
 			lista = []
-			if punto_pj.x < r.left:
+			if circulo.punto.x < r.left:
 				lista.append("esquerda")
-			if punto_pj.x > r.left + r.width:
+			if circulo.punto.x > r.left + r.width:
 				lista.append("dereita")
-			if punto_pj.y < r.top:
+			if circulo.punto.y < r.top:
 				lista.append("arriba")
-			if punto_pj.y > r.top + r.height:
+			if circulo.punto.y > r.top + r.height:
 				lista.append("abaixo")
 			lista.insert(0,r)
 			return lista
@@ -68,6 +99,13 @@ def pendiente(p1,p2):
 	
 def y_intersecto(p1,p2):
 	return p1.y - (pendiente(p1,p2)*p1.x)
+	
+	#PUNTO INTERSECCION CIRCUNFERENCIA
+	
+def punto_corte(p1,p2,radio):
+	v = (p2-p1)
+	punto = v * radio / v.longitude()
+	return [punto.x,punto.y]
 
 #PANTALLA
 
@@ -93,8 +131,8 @@ while ON:
 	
 		#BOLA_PJ
 	
-	pygame.gfxdraw.aacircle(ventana, punto_pj.x, punto_pj.y, RADIO_BOLA_PJ, [0,0,0])
-	pygame.gfxdraw.filled_circle(ventana, punto_pj.x, punto_pj.y, RADIO_BOLA_PJ, [0,0,0])
+	pygame.gfxdraw.aacircle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [0,0,0])
+	pygame.gfxdraw.filled_circle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [0,0,0])
 	
 		#RECTANGULOS COLISIONABLES
 		
@@ -106,48 +144,58 @@ while ON:
 	tecla_pulsada = pygame.key.get_pressed()
 	
 	if tecla_pulsada[K_UP] or tecla_pulsada[K_w]:
-		punto_pj.y -= VELOCIDADE_PJ
+		bola_pj.punto.y -= VELOCIDADE_PJ
 	elif tecla_pulsada[K_DOWN] or tecla_pulsada[K_s]:
-		punto_pj.y += VELOCIDADE_PJ
+		bola_pj.punto.y += VELOCIDADE_PJ
 	if tecla_pulsada[K_RIGHT] or tecla_pulsada[K_d]:
-		punto_pj.x += VELOCIDADE_PJ
+		bola_pj.punto.x += VELOCIDADE_PJ
 	elif tecla_pulsada[K_LEFT] or tecla_pulsada[K_a]:
-		punto_pj.x -= VELOCIDADE_PJ
+		bola_pj.punto.x -= VELOCIDADE_PJ
 		
 	#COLISIONS
 		
 		#MARCO
 		
-	if punto_pj.x >= ANCHO_VENTANA-MARCO-RADIO_BOLA_PJ:
-		punto_pj.x = ANCHO_VENTANA-MARCO-RADIO_BOLA_PJ
-	if punto_pj.x <= MARCO+RADIO_BOLA_PJ:
-		punto_pj.x = MARCO+RADIO_BOLA_PJ
-	if punto_pj.y >= ALTO_VENTANA-MARCO-RADIO_BOLA_PJ:
-		punto_pj.y = ALTO_VENTANA-MARCO-RADIO_BOLA_PJ
-	if punto_pj.y <= MARCO+RADIO_BOLA_PJ:
-		punto_pj.y = MARCO+RADIO_BOLA_PJ
+	if bola_pj.punto.x >= ANCHO_VENTANA-MARCO-bola_pj.radio:
+		bola_pj.punto.x = ANCHO_VENTANA-MARCO-bola_pj.radio
+	if bola_pj.punto.x <= MARCO+bola_pj.radio:
+		bola_pj.punto.x = MARCO+bola_pj.radio
+	if bola_pj.punto.y >= ALTO_VENTANA-MARCO-bola_pj.radio:
+		bola_pj.punto.y = ALTO_VENTANA-MARCO-bola_pj.radio
+	if bola_pj.punto.y <= MARCO+bola_pj.radio:
+		bola_pj.punto.y = MARCO+bola_pj.radio
 		
 		#RECTANGULOS
 		
-	if colision() and (tecla_pulsada[K_UP] or tecla_pulsada[K_w]) and "abaixo" in colision():
-		punto_pj.y = colision()[0].top+colision()[0].height+RADIO_BOLA_PJ
-	elif colision() and (tecla_pulsada[K_DOWN] or tecla_pulsada[K_s]) and "arriba" in colision():
-		punto_pj.y = colision()[0].top-RADIO_BOLA_PJ
-	if colision() and (tecla_pulsada[K_RIGHT] or tecla_pulsada[K_d]) and "esquerda" in colision():
-		punto_pj.x = colision()[0].left-RADIO_BOLA_PJ
-	elif colision() and (tecla_pulsada[K_LEFT] or tecla_pulsada[K_a]) and "dereita" in colision():
-		punto_pj.x = colision()[0].left+colision()[0].width+RADIO_BOLA_PJ
+	if colision(bola_pj,lista_obj) and (tecla_pulsada[K_UP] or tecla_pulsada[K_w]) and "abaixo" in colision(bola_pj,lista_obj):
+		bola_pj.punto.y = colision(bola_pj,lista_obj)[0].top+colision(bola_pj,lista_obj)[0].height+bola_pj.radio
+	elif colision(bola_pj,lista_obj) and (tecla_pulsada[K_DOWN] or tecla_pulsada[K_s]) and "arriba" in colision(bola_pj,lista_obj):
+		bola_pj.punto.y = colision(bola_pj,lista_obj)[0].top-bola_pj.radio
+	if colision(bola_pj,lista_obj) and (tecla_pulsada[K_RIGHT] or tecla_pulsada[K_d]) and "esquerda" in colision(bola_pj,lista_obj):
+		bola_pj.punto.x = colision(bola_pj,lista_obj)[0].left-bola_pj.radio
+	elif colision(bola_pj,lista_obj) and (tecla_pulsada[K_LEFT] or tecla_pulsada[K_a]) and "dereita" in colision(bola_pj,lista_obj):
+		bola_pj.punto.x = colision(bola_pj,lista_obj)[0].left+colision(bola_pj,lista_obj)[0].width+bola_pj.radio
 		
 	#MOUSE
 	
 	pos_mouse = pygame.mouse.get_pos()
 	punto_mouse = punto(pos_mouse[0],pos_mouse[1])
 	
-	pygame.draw.aaline(ventana, [0,0,0], [punto_pj.x,punto_pj.y], pos_mouse)
-	
-	print "pendiente",pendiente(punto_pj,punto_mouse)
-	print "y-intersecto",y_intersecto(punto_pj,punto_mouse)
+	#pygame.draw.aaline(ventana, [0,0,0], [bola_pj.punto.x,bola_pj.punto.y], punto_corte(bola_pj.punto,punto_mouse,RADIO_BOLA_PJ*2))
 
+	#print punto_corte(bola_pj.punto,punto_mouse,RADIO_BOLA_PJ*2)
+	
+	vertical_line = pygame.Surface((1,ALTO_VENTANA),pygame.SRCALPHA)
+	vertical_line.fill([220,0,0,100])
+	ventana.blit(vertical_line, (punto_mouse.x,0))
+	
+	horizontal_line = pygame.Surface((ANCHO_VENTANA,1),pygame.SRCALPHA)
+	horizontal_line.fill([220,0,0,100])
+	ventana.blit(horizontal_line, (0,punto_mouse.y))
+	
+	#pygame.draw.aaline(ventana, [0,0,0], [0,punto_mouse.y], [ANCHO_VENTANA,punto_mouse.y])
+	#pygame.draw.aaline(ventana, [0,0,0], [punto_mouse.x,0], [punto_mouse.x,ALTO_VENTANA])
+	
 	#ACTUALIZAR PANTALLA
 		
 	pygame.display.update()
