@@ -7,14 +7,14 @@ import math
 
 #CONSTANTES
 
-ANCHO_VENTANA = 500
-ALTO_VENTANA = 500
+ANCHO_VENTANA = 400
+ALTO_VENTANA = 400
 
 MARCO = 5
 
 RADIO_BOLA_PJ = 10
 
-VELOCIDADE_PJ = 3
+VELOCIDADE_PJ = 1
 
 #CREAR CLASES
 
@@ -37,6 +37,7 @@ class punto:
 	__truediv__ = __div__
 		
 punto_pj = punto(ANCHO_VENTANA/2 + MARCO, ALTO_VENTANA/2 + MARCO)
+punto_futuro = punto(ANCHO_VENTANA/2 + MARCO, ALTO_VENTANA/2 + MARCO)
 
 class circulo:
 	def __init__(self,punto,radio):
@@ -44,6 +45,8 @@ class circulo:
 		self.radio = radio
 	
 bola_pj = circulo(punto_pj,RADIO_BOLA_PJ)
+
+bola_futuro = circulo(punto_futuro,RADIO_BOLA_PJ)
 
 #INICIAR PYGAME
 
@@ -53,7 +56,7 @@ pygame.init()
 
 obj1 = pygame.Rect(int(ANCHO_VENTANA/5),int(ALTO_VENTANA/5),50,50)
 obj2 = pygame.Rect(int(ANCHO_VENTANA/1.3),int(ALTO_VENTANA/3),60,30)
-obj3 = pygame.Rect(int(ANCHO_VENTANA/1.5),int(ALTO_VENTANA/1.3),30,70)
+obj3 = pygame.Rect(int(ANCHO_VENTANA/1.4),int(ALTO_VENTANA/1.5),30,70)
 
 lista_obj = [obj1,obj2,obj3]
 
@@ -70,20 +73,11 @@ def c_circulo_rect(circulo,rectangulo):
 	return corner_distancia <= circulo.radio**2
 
 def colision(circulo,lista):
+	lista_r = []
 	for r in lista:
 		if c_circulo_rect(circulo,r):
-			lista = []
-			if circulo.punto.x < r.left:
-				lista.append("esquerda")
-			if circulo.punto.x > r.left + r.width:
-				lista.append("dereita")
-			if circulo.punto.y < r.top:
-				lista.append("arriba")
-			if circulo.punto.y > r.top + r.height:
-				lista.append("abaixo")
-			lista.insert(0,r)
-			return lista
-	return False
+			lista_r.append(r)
+	return lista_r
 	
 #FUNCIONS MATEMATICAS
 
@@ -106,6 +100,29 @@ def punto_corte(p1,p2,radio):
 	v = (p2-p1)
 	punto = p1 + v * radio / v.longitude()
 	return [punto.x,punto.y]
+	
+	#PUNTO FORA PARA LASER
+	
+def punto_fora(p1,p2):
+	if p2.x < p1.x:
+		py = pendiente(p1,p2)*MARCO + y_intersecto(p1,p2)
+		px = MARCO
+		return [px,py]
+	elif p2.x > p1.x:
+		py = pendiente(p1,p2)*ANCHO_VENTANA-MARCO + y_intersecto(p1,p2)
+		px = ANCHO_VENTANA-MARCO
+		return [px,py]
+	elif p2.y > p1.y:
+		return [p1.x,ALTO_VENTANA-MARCO]
+	else:
+		return [p1.x,MARCO]
+	
+	
+	#if p2.x < p1.x:
+	#	return [MARCO,y_intersecto(p1,p2)+MARCO]
+	#elif p2.x > p1.x:
+	#	return [ANCHO_VENTANA-MARCO,-y_intersecto(p1,p2)]
+	
 
 #PANTALLA
 
@@ -128,74 +145,70 @@ while ON:
 	tecla_pulsada = pygame.key.get_pressed()
 	
 	if tecla_pulsada[K_UP] or tecla_pulsada[K_w]:
-		bola_pj.punto.y -= VELOCIDADE_PJ
-	elif tecla_pulsada[K_DOWN] or tecla_pulsada[K_s]:
-		bola_pj.punto.y += VELOCIDADE_PJ
+		bola_futuro.punto.y -= VELOCIDADE_PJ
+	if tecla_pulsada[K_DOWN] or tecla_pulsada[K_s]:
+		bola_futuro.punto.y += VELOCIDADE_PJ
 	if tecla_pulsada[K_RIGHT] or tecla_pulsada[K_d]:
-		bola_pj.punto.x += VELOCIDADE_PJ
-	elif tecla_pulsada[K_LEFT] or tecla_pulsada[K_a]:
-		bola_pj.punto.x -= VELOCIDADE_PJ
+		bola_futuro.punto.x += VELOCIDADE_PJ
+	if tecla_pulsada[K_LEFT] or tecla_pulsada[K_a]:
+		bola_futuro.punto.x -= VELOCIDADE_PJ
+	
+	if colision(bola_futuro,lista_obj):
+		if colision(circulo(punto(bola_futuro.punto.x,bola_pj.punto.y),RADIO_BOLA_PJ),lista_obj):
+			bola_futuro.punto.x = bola_pj.punto.x
+		if colision(circulo(punto(bola_pj.punto.x,bola_futuro.punto.y),RADIO_BOLA_PJ),lista_obj):	
+			bola_futuro.punto.y = bola_pj.punto.y
 		
 	#COLISIONS
 		
 		#MARCO
 		
-	if bola_pj.punto.x >= ANCHO_VENTANA-MARCO-bola_pj.radio:
-		bola_pj.punto.x = ANCHO_VENTANA-MARCO-bola_pj.radio
-	if bola_pj.punto.x <= MARCO+bola_pj.radio:
-		bola_pj.punto.x = MARCO+bola_pj.radio
-	if bola_pj.punto.y >= ALTO_VENTANA-MARCO-bola_pj.radio:
-		bola_pj.punto.y = ALTO_VENTANA-MARCO-bola_pj.radio
-	if bola_pj.punto.y <= MARCO+bola_pj.radio:
-		bola_pj.punto.y = MARCO+bola_pj.radio
+	if bola_futuro.punto.x >= ANCHO_VENTANA-MARCO-bola_pj.radio:
+		bola_futuro.punto.x = ANCHO_VENTANA-MARCO-bola_pj.radio
+	if bola_futuro.punto.x <= MARCO+bola_pj.radio:
+		bola_futuro.punto.x = MARCO+bola_pj.radio
+	if bola_futuro.punto.y >= ALTO_VENTANA-MARCO-bola_pj.radio:
+		bola_futuro.punto.y = ALTO_VENTANA-MARCO-bola_pj.radio
+	if bola_futuro.punto.y <= MARCO+bola_pj.radio:
+		bola_futuro.punto.y = MARCO+bola_pj.radio
 		
-		#RECTANGULOS
-		
-	if colision(bola_pj,lista_obj) and (tecla_pulsada[K_UP] or tecla_pulsada[K_w]) and "abaixo" in colision(bola_pj,lista_obj):
-		bola_pj.punto.y = colision(bola_pj,lista_obj)[0].top+colision(bola_pj,lista_obj)[0].height+bola_pj.radio
-	elif colision(bola_pj,lista_obj) and (tecla_pulsada[K_DOWN] or tecla_pulsada[K_s]) and "arriba" in colision(bola_pj,lista_obj):
-		bola_pj.punto.y = colision(bola_pj,lista_obj)[0].top-bola_pj.radio
-	if colision(bola_pj,lista_obj) and (tecla_pulsada[K_RIGHT] or tecla_pulsada[K_d]) and "esquerda" in colision(bola_pj,lista_obj):
-		bola_pj.punto.x = colision(bola_pj,lista_obj)[0].left-bola_pj.radio
-	elif colision(bola_pj,lista_obj) and (tecla_pulsada[K_LEFT] or tecla_pulsada[K_a]) and "dereita" in colision(bola_pj,lista_obj):
-		bola_pj.punto.x = colision(bola_pj,lista_obj)[0].left+colision(bola_pj,lista_obj)[0].width+bola_pj.radio
+	bola_pj.punto.x = bola_futuro.punto.x
+	bola_pj.punto.y = bola_futuro.punto.y
 		
 	#DEBUXADO
 	
 		#RECT PANTALLA
 	
-	pygame.draw.rect(ventana, [250,250,250], rect_pantalla)
+	pygame.draw.rect(ventana, [240,240,240], rect_pantalla)
 	
 		#BOLA_PJ
 	
+	pygame.gfxdraw.aacircle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [50,50,50])
+	pygame.gfxdraw.filled_circle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [50,50,50])
 	pygame.gfxdraw.aacircle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [0,0,0])
-	pygame.gfxdraw.filled_circle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [0,0,0])
 	
 		#RECTANGULOS COLISIONABLES
 		
 	for i in lista_obj:
-		pygame.draw.rect(ventana,[100,50,0],i)
+		pygame.draw.rect(ventana,[150,50,20],i)
+		pygame.draw.rect(ventana,[0,0,0],i,3)
 	
 	#MOUSE
 	
 	pos_mouse = pygame.mouse.get_pos()
 	punto_mouse = punto(pos_mouse[0],pos_mouse[1])
 
-	if not bola_pj.punto.x == punto_mouse.x and not bola_pj.punto.y == punto_mouse.y:
+	if not (bola_pj.punto.x == punto_mouse.x and bola_pj.punto.y == punto_mouse.y):
+		pygame.draw.aaline(ventana, [255,0,0], punto_corte(bola_pj.punto,punto_mouse,RADIO_BOLA_PJ*2),  punto_fora(bola_pj.punto,punto_mouse))
 		pygame.draw.aaline(ventana, [0,0,0], [bola_pj.punto.x,bola_pj.punto.y], punto_corte(bola_pj.punto,punto_mouse,RADIO_BOLA_PJ*2))
-
-	#print punto_corte(bola_pj.punto,punto_mouse,RADIO_BOLA_PJ*2)
 	
-	vertical_line = pygame.Surface((1,ALTO_VENTANA),pygame.SRCALPHA)
-	vertical_line.fill([220,0,0,100])
-	ventana.blit(vertical_line, (punto_mouse.x,0))
+	#vertical_line = pygame.Surface((1,ALTO_VENTANA),pygame.SRCALPHA)
+	#vertical_line.fill([220,0,0,100])
+	#ventana.blit(vertical_line, (punto_mouse.x,0))
 	
-	horizontal_line = pygame.Surface((ANCHO_VENTANA,1),pygame.SRCALPHA)
-	horizontal_line.fill([220,0,0,100])
-	ventana.blit(horizontal_line, (0,punto_mouse.y))
-	
-	#pygame.draw.aaline(ventana, [0,0,0], [0,punto_mouse.y], [ANCHO_VENTANA,punto_mouse.y])
-	#pygame.draw.aaline(ventana, [0,0,0], [punto_mouse.x,0], [punto_mouse.x,ALTO_VENTANA])
+	#horizontal_line = pygame.Surface((ANCHO_VENTANA,1),pygame.SRCALPHA)
+	#horizontal_line.fill([220,0,0,100])
+	#ventana.blit(horizontal_line, (0,punto_mouse.y))
 	
 	#ACTUALIZAR PANTALLA
 		
@@ -208,6 +221,6 @@ while ON:
 			pygame.display.quit()
 			ON = False
 	
-	reloj.tick(60)
+	reloj.tick(120)
 	
 
