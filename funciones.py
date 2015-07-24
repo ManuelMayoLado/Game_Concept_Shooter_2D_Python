@@ -11,12 +11,17 @@ def c_circulo_rect(circulo,rectangulo):
 		return True
 	corner_distancia = (c_distancia_x - rectangulo.width/2)**2 + (c_distancia_y - rectangulo.height/2)**2
 	return corner_distancia <= circulo.radio**2
+	
+def c_circulo_cir(circulo1,circulo2):
+	return circulo1.radio + circulo2.radio > circulo1.punto.distancia(circulo2.punto)
 
-def colision(circulo,lista):
+def colision(circulo,lista,c=False):
 	lista_r = []
-	for r in lista:
-		if c_circulo_rect(circulo,r):
-			lista_r.append(r)
+	for i in lista:
+		if not c and c_circulo_rect(circulo,i):
+			lista_r.append(i)
+		elif c and c_circulo_cir(circulo,i):
+			lista_r.append(i)
 	return lista_r
 	
 #FUNCIONS MATEMATICAS
@@ -44,12 +49,14 @@ def punto_corte(p1,p2,radio,p=False):
 	else: 
 		return punto
 		
-def borrado_proyectiles(lista,ancho_v,alto_v):	
+def borrado_proyectiles(lista,lista_rec,lista_cir,ancho_v,alto_v,marco,radio):	
 	indice = 0
 	lista_r = lista
+	lista_borrados = []
 	while indice < (len(lista)):
-		if lista[indice][0].punto.x < 0 or lista[indice][0].punto.x > ancho_v or lista[indice][0].punto.y < 0 or lista[indice][0].punto.y > alto_v:
+		if lista[indice][0].punto.x < marco+radio or lista[indice][0].punto.x > ancho_v-(marco+radio) or lista[indice][0].punto.y < marco+radio or lista[indice][0].punto.y > alto_v-(marco+radio) or colision(lista[indice][0],lista_rec) or colision(lista[indice][0],lista_cir,c=True):
+			lista_borrados.append([lista_r[indice][0],15])
 			del lista_r[indice]
 		else:
 			indice += 1
-	return lista_r
+	return [lista_r, lista_borrados]

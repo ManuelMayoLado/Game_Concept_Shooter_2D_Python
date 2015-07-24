@@ -16,6 +16,8 @@ class punto:
 		return self + (-other)
 	def longitude(self):
 		return math.sqrt(self.x**2 + self.y**2)
+	def distancia(self,other):
+		return math.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
 	def __mul__(self,n):
 		return punto(self.x*n,self.y*n)
 	def __div__(self,n):

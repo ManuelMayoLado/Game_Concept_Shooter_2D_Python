@@ -4,6 +4,7 @@ import pygame
 import pygame.gfxdraw
 from pygame.locals import *
 import math
+import random
 
 from funciones import *
 from clases import *
@@ -16,11 +17,19 @@ ALTO_VENTANA = 400
 MARCO = 5
 
 RADIO_BOLA_PJ = 10
+RADIO_PROYECTILES = RADIO_BOLA_PJ/5
 
-VELOCIDADE_PJ = 1
-VELOCIDADE_PROYECTIL = 5
+VELOCIDADE_PJ = 2
+VELOCIDADE_PROYECTIL = 10
 
 lista_proyectiles = []
+lista_explosions = []
+lista_enemigos = []
+
+temporizador_enemigos = 30
+VELOCIDADE_ENEMIGOS = 2.5
+
+tempo_recarga = 0
 
 punto_pj = punto(ANCHO_VENTANA/2 + MARCO, ALTO_VENTANA/2 + MARCO)
 punto_futuro = punto(ANCHO_VENTANA/2 + MARCO, ALTO_VENTANA/2 + MARCO)
@@ -36,8 +45,8 @@ pygame.init()
 #LISTA DE OBJETOS COLISIONABLES
 
 obj1 = pygame.Rect(int(ANCHO_VENTANA/5),int(ALTO_VENTANA/5),50,50)
-obj2 = pygame.Rect(int(ANCHO_VENTANA/1.3),int(ALTO_VENTANA/3),60,30)
-obj3 = pygame.Rect(int(ANCHO_VENTANA/1.4),int(ALTO_VENTANA/1.5),30,70)
+obj2 = pygame.Rect(int(ANCHO_VENTANA/1.3),int(ALTO_VENTANA/3),65,35)
+obj3 = pygame.Rect(int(ANCHO_VENTANA/1.4),int(ALTO_VENTANA/1.5),35,75)
 
 lista_obj = [obj1,obj2,obj3]
 			
@@ -49,13 +58,32 @@ rect_pantalla = pygame.Rect(MARCO,MARCO,ANCHO_VENTANA-(MARCO*2),ALTO_VENTANA-(MA
 
 ON = True
 
-#BUCLE
+#BUCLE ------------------------------------ XOGO
 
 while ON:
 	
 	reloj = pygame.time.Clock()
 
 	ventana.fill([0,0,0])
+	
+	#TEMPORIZADORES
+	
+	if tempo_recarga > 0:
+		tempo_recarga -= 1
+		
+	if temporizador_enemigos > 0:
+		temporizador_enemigos -= 1
+		
+	#CREACION DE ENEMIGOS
+	
+	if temporizador_enemigos == 0 and len(lista_enemigos) < 10:
+		lista_enemigos.append(circulo(punto(random.randint(0, ANCHO_VENTANA),-RADIO_BOLA_PJ),RADIO_BOLA_PJ))
+		temporizador_enemigos = 30
+
+	#MOUSE
+	
+	pos_mouse = pygame.mouse.get_pos()
+	punto_mouse = punto(pos_mouse[0],pos_mouse[1])
 	
 	#MOVEMENTO
 	
@@ -79,15 +107,23 @@ while ON:
 			bola_futuro.punto.y = bola_pj.punto.y
 			
 		#PROYECTILES
-		
-		#BORRADO DE PROYECTILES
-		
-	lista_proyectiles = borrado_proyectiles(lista_proyectiles,ANCHO_VENTANA,ALTO_VENTANA)
-	
+			
 		#MOV
 		
 	for i in range(len(lista_proyectiles)):
 		lista_proyectiles[i][0].punto += lista_proyectiles[i][1]
+		
+		#ENEMIGOS
+		
+	for i in lista_enemigos:
+		v = (bola_pj.punto - i.punto)
+		i.punto = i.punto + v * VELOCIDADE_ENEMIGOS / v.longitude()
+		
+		#BORRADO DE PROYECTILES
+
+	lista_explosions = lista_explosions + borrado_proyectiles(lista_proyectiles,lista_obj,lista_enemigos,ANCHO_VENTANA,ALTO_VENTANA,MARCO,RADIO_PROYECTILES)[1]
+	
+	lista_proyectiles = borrado_proyectiles(lista_proyectiles,lista_obj,lista_enemigos,ANCHO_VENTANA,ALTO_VENTANA,MARCO,RADIO_PROYECTILES)[0]
 		
 	#COLISIONS
 		
@@ -104,6 +140,14 @@ while ON:
 		
 	bola_pj.punto.x = bola_futuro.punto.x
 	bola_pj.punto.y = bola_futuro.punto.y
+	
+		#BALA CONTRA ENEMIGOS
+
+	for i in lista_proyectiles+lista_explosions:
+		lista_col = colision(i[0],lista_enemigos,c=True)
+		if lista_col:
+			for x in lista_col:
+				lista_enemigos.remove(x)
 		
 	#DEBUXADO
 	
@@ -111,34 +155,52 @@ while ON:
 	
 	pygame.draw.rect(ventana, [240,240,240], rect_pantalla)
 	
-		#BOLA_PJ
-	
-	pygame.gfxdraw.aacircle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [50,50,200])
-	pygame.gfxdraw.filled_circle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [50,50,200])
-	pygame.gfxdraw.aacircle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [0,0,0])
-	
 		#RECTANGULOS COLISIONABLES
 		
 	for i in lista_obj:
 		pygame.draw.rect(ventana,[150,50,20],i)
 		pygame.draw.rect(ventana,[0,0,0],i,3)
 		
+		#ENEMIGOS
+		
+	for i in lista_enemigos:
+		pygame.gfxdraw.aacircle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [0,0,0])
+		pygame.gfxdraw.filled_circle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [0,0,0])
+		
+		#LASER E CANHON
+	
+	if not (bola_pj.punto.x == punto_mouse.x and bola_pj.punto.y == punto_mouse.y):
+		#pygame.draw.aaline(ventana, [255,0,0], punto_corte(bola_pj.punto,punto_mouse,RADIO_BOLA_PJ*2),  punto_fora(bola_pj.punto,punto_mouse))
+		pygame.draw.aaline(ventana, [0,0,0], [bola_pj.punto.x,bola_pj.punto.y], punto_corte(bola_pj.punto,punto_mouse,RADIO_BOLA_PJ*2))
+	
+		#BOLA_PJ
+	
+	pygame.gfxdraw.aacircle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [50,50,150])
+	pygame.gfxdraw.filled_circle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [50,50,150])
+	pygame.gfxdraw.aacircle(ventana, bola_pj.punto.x, bola_pj.punto.y, RADIO_BOLA_PJ, [0,0,0])
+		
 		#PROYECTILES
 	
 	for i in lista_proyectiles:
-		pygame.gfxdraw.aacircle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [255,0,0])
-		pygame.gfxdraw.filled_circle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [255,0,0])
-	
-	#MOUSE
-	
-	pos_mouse = pygame.mouse.get_pos()
-	punto_mouse = punto(pos_mouse[0],pos_mouse[1])
+		pygame.gfxdraw.aacircle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [200,0,0])
+		pygame.gfxdraw.filled_circle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [200,0,0])
+		
+		#PROYECTILES EXPLOTANDO
 
-	#LASER
+	for i in lista_explosions:
+		radio = i[0].radio * (abs(15-i[1])+1)/2
+		i[1] -= 1
+		pygame.gfxdraw.aacircle(ventana, int(i[0].punto.x), int(i[0].punto.y), radio, [255,0,0])
+		if i[1] > 8:
+			pygame.gfxdraw.filled_circle(ventana, int(i[0].punto.x), int(i[0].punto.y), radio, [255,0,0])
+			
+	for i in range(len(lista_explosions)):
+		if lista_explosions[i][1] <= 0:
+			lista_explosions[i]='eliminar'
 	
-	if not (bola_pj.punto.x == punto_mouse.x and bola_pj.punto.y == punto_mouse.y):
-	#	pygame.draw.aaline(ventana, [255,0,0], punto_corte(bola_pj.punto,punto_mouse,RADIO_BOLA_PJ*2),  punto_fora(bola_pj.punto,punto_mouse))
-		pygame.draw.aaline(ventana, [0,0,0], [bola_pj.punto.x,bola_pj.punto.y], punto_corte(bola_pj.punto,punto_mouse,RADIO_BOLA_PJ*2))
+	while 'eliminar' in lista_explosions:
+		lista_explosions.remove('eliminar')
+
 	
 	#ACTUALIZAR PANTALLA
 		
@@ -146,15 +208,17 @@ while ON:
 	
 	#EVENTOS
 	
-	for e in pygame.event.get():
-		if e.type == pygame.KEYDOWN:
-			if e.key == pygame.K_SPACE and not (bola_pj.punto.x == punto_mouse.x and bola_pj.punto.y == punto_mouse.y):
+	if pygame.mouse.get_pressed()[0] == 1 and not (bola_pj.punto.x == punto_mouse.x and bola_pj.punto.y == punto_mouse.y) and tempo_recarga == 0:
 				v = punto_mouse - bola_pj.punto
-				lista_proyectiles.append([circulo(punto_corte(bola_pj.punto,punto_mouse,bola_pj.radio*2,p=True),bola_pj.radio/3),v * VELOCIDADE_PROYECTIL / v.longitude()])
+				lista_proyectiles.append([circulo(punto_corte(bola_pj.punto,punto_mouse,bola_pj.radio*2,p=True),RADIO_PROYECTILES),v * VELOCIDADE_PROYECTIL / v.longitude()])
+				tempo_recarga = 10
+	
+	for e in pygame.event.get():
+		#if e.type == pygame.KEYDOWN:
 		if e.type == pygame.QUIT:
 			pygame.display.quit()
 			ON = False
 	
-	reloj.tick(120)
+	reloj.tick(60)
 	
 
