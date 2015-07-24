@@ -56,6 +56,8 @@ ventana = pygame.display.set_mode([ANCHO_VENTANA, ALTO_VENTANA])
 
 rect_pantalla = pygame.Rect(MARCO,MARCO,ANCHO_VENTANA-(MARCO*2),ALTO_VENTANA-(MARCO*2))
 
+game_over = False
+
 ON = True
 
 #BUCLE ------------------------------------ XOGO
@@ -64,7 +66,10 @@ while ON:
 	
 	reloj = pygame.time.Clock()
 
-	ventana.fill([0,0,0])
+	if game_over:
+		ventana.fill([255,0,0])
+	else:
+		ventana.fill([0,0,0])
 	
 	#TEMPORIZADORES
 	
@@ -91,14 +96,15 @@ while ON:
 	
 	tecla_pulsada = pygame.key.get_pressed()
 	
-	if tecla_pulsada[K_UP] or tecla_pulsada[K_w]:
-		bola_futuro.punto.y -= VELOCIDADE_PJ
-	if tecla_pulsada[K_DOWN] or tecla_pulsada[K_s]:
-		bola_futuro.punto.y += VELOCIDADE_PJ
-	if tecla_pulsada[K_RIGHT] or tecla_pulsada[K_d]:
-		bola_futuro.punto.x += VELOCIDADE_PJ
-	if tecla_pulsada[K_LEFT] or tecla_pulsada[K_a]:
-		bola_futuro.punto.x -= VELOCIDADE_PJ
+	if not game_over:
+		if tecla_pulsada[K_UP] or tecla_pulsada[K_w]:
+			bola_futuro.punto.y -= VELOCIDADE_PJ
+		if tecla_pulsada[K_DOWN] or tecla_pulsada[K_s]:
+			bola_futuro.punto.y += VELOCIDADE_PJ
+		if tecla_pulsada[K_RIGHT] or tecla_pulsada[K_d]:
+			bola_futuro.punto.x += VELOCIDADE_PJ
+		if tecla_pulsada[K_LEFT] or tecla_pulsada[K_a]:
+			bola_futuro.punto.x -= VELOCIDADE_PJ
 	
 	if colision(bola_futuro,lista_obj):
 		if colision(circulo(punto(bola_futuro.punto.x,bola_pj.punto.y),RADIO_BOLA_PJ),lista_obj):
@@ -114,10 +120,11 @@ while ON:
 		lista_proyectiles[i][0].punto += lista_proyectiles[i][1]
 		
 		#ENEMIGOS
-		
-	for i in lista_enemigos:
-		v = (bola_pj.punto - i.punto)
-		i.punto = i.punto + v * VELOCIDADE_ENEMIGOS / v.longitude()
+	
+	if not game_over:
+		for i in lista_enemigos:
+			v = (bola_pj.punto - i.punto)
+			i.punto = i.punto + v * VELOCIDADE_ENEMIGOS / v.longitude()
 		
 		#BORRADO DE PROYECTILES
 
@@ -128,7 +135,7 @@ while ON:
 	#COLISIONS
 		
 		#MARCO
-		
+	
 	if bola_futuro.punto.x >= ANCHO_VENTANA-MARCO-bola_pj.radio:
 		bola_futuro.punto.x = ANCHO_VENTANA-MARCO-bola_pj.radio
 	if bola_futuro.punto.x <= MARCO+bola_pj.radio:
@@ -148,12 +155,17 @@ while ON:
 		if lista_col:
 			for x in lista_col:
 				lista_enemigos.remove(x)
+				
+		#ENEMIGOS CONTRA PJ
+		
+	if colision(bola_pj,lista_enemigos,c=True):
+		game_over = True
 		
 	#DEBUXADO
 	
 		#RECT PANTALLA
 	
-	pygame.draw.rect(ventana, [240,240,240], rect_pantalla)
+	pygame.draw.rect(ventana, [245,245,245], rect_pantalla)
 	
 		#RECTANGULOS COLISIONABLES
 		
@@ -182,17 +194,17 @@ while ON:
 		#PROYECTILES
 	
 	for i in lista_proyectiles:
-		pygame.gfxdraw.aacircle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [200,0,0])
-		pygame.gfxdraw.filled_circle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [200,0,0])
+		pygame.gfxdraw.aacircle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [0,0,255])
+		pygame.gfxdraw.filled_circle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [0,0,255])
 		
 		#PROYECTILES EXPLOTANDO
 
 	for i in lista_explosions:
 		radio = i[0].radio * (abs(15-i[1])+1)/2
 		i[1] -= 1
-		pygame.gfxdraw.aacircle(ventana, int(i[0].punto.x), int(i[0].punto.y), radio, [255,0,0])
+		pygame.gfxdraw.aacircle(ventana, int(i[0].punto.x), int(i[0].punto.y), radio, [0,0,255])
 		if i[1] > 8:
-			pygame.gfxdraw.filled_circle(ventana, int(i[0].punto.x), int(i[0].punto.y), radio, [255,0,0])
+			pygame.gfxdraw.filled_circle(ventana, int(i[0].punto.x), int(i[0].punto.y), radio, [0,0,0])
 			
 	for i in range(len(lista_explosions)):
 		if lista_explosions[i][1] <= 0:
@@ -208,13 +220,16 @@ while ON:
 	
 	#EVENTOS
 	
-	if pygame.mouse.get_pressed()[0] == 1 and not (bola_pj.punto.x == punto_mouse.x and bola_pj.punto.y == punto_mouse.y) and tempo_recarga == 0:
+	if pygame.mouse.get_pressed()[0] == 1 and not (bola_pj.punto.x == punto_mouse.x and bola_pj.punto.y == punto_mouse.y) and tempo_recarga == 0 and not game_over:
 				v = punto_mouse - bola_pj.punto
 				lista_proyectiles.append([circulo(punto_corte(bola_pj.punto,punto_mouse,bola_pj.radio*2,p=True),RADIO_PROYECTILES),v * VELOCIDADE_PROYECTIL / v.longitude()])
 				tempo_recarga = 10
 	
 	for e in pygame.event.get():
-		#if e.type == pygame.KEYDOWN:
+		if e.type == pygame.KEYDOWN:
+			if e.key == pygame.K_SPACE and game_over:
+				lista_enemigos = []
+				game_over = False
 		if e.type == pygame.QUIT:
 			pygame.display.quit()
 			ON = False
