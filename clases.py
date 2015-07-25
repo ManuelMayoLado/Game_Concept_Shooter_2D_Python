@@ -21,7 +21,10 @@ class punto:
 	def __mul__(self,n):
 		return punto(self.x*n,self.y*n)
 	def __div__(self,n):
-		return punto(self.x/n,self.y/n)
+		if n != 0:
+			return punto(self.x/n,self.y/n)
+		else:
+			return punto(self.x/0.00001,self.y/0.00001)
 	__truediv__ = __div__
 	
 class circulo:

@@ -26,8 +26,8 @@ lista_proyectiles = []
 lista_explosions = []
 lista_enemigos = []
 
-temporizador_enemigos = 30
-VELOCIDADE_ENEMIGOS = 2.5
+temporizador_enemigos = 80
+VELOCIDADE_ENEMIGOS = 2
 
 tempo_recarga = 0
 
@@ -81,9 +81,17 @@ while ON:
 		
 	#CREACION DE ENEMIGOS
 	
-	if temporizador_enemigos == 0 and len(lista_enemigos) < 10:
-		lista_enemigos.append(circulo(punto(random.randint(0, ANCHO_VENTANA),-RADIO_BOLA_PJ),RADIO_BOLA_PJ))
-		temporizador_enemigos = 30
+	if temporizador_enemigos == 0 and len(lista_enemigos) < 40:
+		numero_random = random.randint(0,3)
+		if numero_random == 0:
+			lista_enemigos.append(circulo(punto(random.randint(0, ANCHO_VENTANA),ALTO_VENTANA+RADIO_BOLA_PJ),RADIO_BOLA_PJ))
+		if numero_random == 1:
+			lista_enemigos.append(circulo(punto(random.randint(0, ANCHO_VENTANA),-RADIO_BOLA_PJ),RADIO_BOLA_PJ))
+		if numero_random == 2:
+			lista_enemigos.append(circulo(punto(-RADIO_BOLA_PJ,random.randint(0, ALTO_VENTANA)),RADIO_BOLA_PJ))
+		if numero_random == 3:
+			lista_enemigos.append(circulo(punto(ANCHO_VENTANA+RADIO_BOLA_PJ,random.randint(0, ALTO_VENTANA)),RADIO_BOLA_PJ))
+		temporizador_enemigos = random.randint(20, 50)
 
 	#MOUSE
 	
@@ -121,11 +129,26 @@ while ON:
 		
 		#ENEMIGOS
 	
-	if not game_over:
-		for i in lista_enemigos:
-			v = (bola_pj.punto - i.punto)
-			i.punto = i.punto + v * VELOCIDADE_ENEMIGOS / v.longitude()
-		
+	lista_enemigos_gardada = []
+	
+	for i in lista_enemigos:
+		lista_enemigos_gardada.append(circulo(punto(i.punto.x,i.punto.y),i.radio))
+	
+	for i in lista_enemigos:
+		v = (bola_pj.punto - i.punto)
+		i.punto = i.punto + v * VELOCIDADE_ENEMIGOS / v.longitude()
+			
+	for i in range(len(lista_enemigos)):
+		lista_enemigos_colisionable = lista_enemigos[:]
+		lista_enemigos_colisionable.remove(lista_enemigos[i])
+		if colision(lista_enemigos[i],lista_obj) or colision(lista_enemigos[i],lista_enemigos_colisionable,c=True):
+			circulo_enemigo_cam_x = circulo(punto(lista_enemigos[i].punto.x,lista_enemigos_gardada[i].punto.y),lista_enemigos[i].radio)
+			if colision(circulo_enemigo_cam_x,lista_obj) or colision(circulo_enemigo_cam_x,lista_enemigos_colisionable,c=True):
+				lista_enemigos[i].punto.x = lista_enemigos_gardada[i].punto.x
+			circulo_enemigo_cam_y = circulo(punto(lista_enemigos_gardada[i].punto.x,lista_enemigos[i].punto.y),lista_enemigos[i].radio)
+			if colision(circulo_enemigo_cam_y,lista_obj) or colision(circulo_enemigo_cam_y,lista_enemigos_colisionable,c=True):
+				lista_enemigos[i].punto.y = lista_enemigos_gardada[i].punto.y
+					
 		#BORRADO DE PROYECTILES
 
 	lista_explosions = lista_explosions + borrado_proyectiles(lista_proyectiles,lista_obj,lista_enemigos,ANCHO_VENTANA,ALTO_VENTANA,MARCO,RADIO_PROYECTILES)[1]
@@ -176,8 +199,8 @@ while ON:
 		#ENEMIGOS
 		
 	for i in lista_enemigos:
-		pygame.gfxdraw.aacircle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [0,0,0])
-		pygame.gfxdraw.filled_circle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [0,0,0])
+		pygame.gfxdraw.aacircle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [0,80,0])
+		pygame.gfxdraw.filled_circle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [0,80,0])
 		
 		#LASER E CANHON
 	
@@ -223,12 +246,13 @@ while ON:
 	if pygame.mouse.get_pressed()[0] == 1 and not (bola_pj.punto.x == punto_mouse.x and bola_pj.punto.y == punto_mouse.y) and tempo_recarga == 0 and not game_over:
 				v = punto_mouse - bola_pj.punto
 				lista_proyectiles.append([circulo(punto_corte(bola_pj.punto,punto_mouse,bola_pj.radio*2,p=True),RADIO_PROYECTILES),v * VELOCIDADE_PROYECTIL / v.longitude()])
-				tempo_recarga = 10
+				tempo_recarga = 20
 	
 	for e in pygame.event.get():
 		if e.type == pygame.KEYDOWN:
 			if e.key == pygame.K_SPACE and game_over:
 				lista_enemigos = []
+				temporizador_enemigos = 80
 				game_over = False
 		if e.type == pygame.QUIT:
 			pygame.display.quit()
