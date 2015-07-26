@@ -26,6 +26,7 @@ VELOCIDADE_PROYECTIL = 10
 lista_proyectiles = []
 lista_explosions = []
 lista_enemigos = []
+lista_sangre = []
 
 temporizador_enemigos = 80
 VELOCIDADE_ENEMIGOS = 2
@@ -55,6 +56,7 @@ lista_obj = [obj1,obj2,obj3,obj4]
 #PANTALLA
 
 ventana = pygame.display.set_mode([ANCHO_VENTANA, ALTO_VENTANA])
+pygame.display.set_caption("Conceptos")
 
 game_over = False
 
@@ -100,7 +102,7 @@ while ON:
 		
 	#CREACION DE ENEMIGOS
 	
-	if temporizador_enemigos == 0 and len(lista_enemigos) < 40:
+	if temporizador_enemigos == 0 and len(lista_enemigos) < 15:
 		numero_random = random.randint(0,3)
 		if numero_random == 0:
 			lista_enemigos.append(circulo(punto(random.randint(0, ANCHO_VENTANA),ALTO_VENTANA+RADIO_BOLA_PJ),RADIO_BOLA_PJ))
@@ -111,14 +113,15 @@ while ON:
 		if numero_random == 3:
 			lista_enemigos.append(circulo(punto(ANCHO_VENTANA+RADIO_BOLA_PJ,random.randint(0, ALTO_VENTANA)),RADIO_BOLA_PJ))
 		temporizador_enemigos = random.randint(20, 50)
-
+	
 	#MOUSE
 	
 	pos_mouse = pygame.mouse.get_pos()
 	punto_mouse = punto(pos_mouse[0],pos_mouse[1])
 	
-	#MOVEMENTO PUTADAS
+	#MOVEMENTO MARCO E RECTANGULOS
 	
+	'''
 	if not game_over and MARCO < 30:
 		MARCO += 0.01
 	
@@ -130,14 +133,15 @@ while ON:
 			i.top += 1
 			i.height -= 1
 			i.width -= 1
-		time_reducir_bloques = 0
-		
+		time_reducir_bloques = 0 #/
+	
+
 	lista_obj_ant = lista_obj[:]
 	
 	for i in range(len(lista_obj)):
 		if lista_obj_ant[i].height <= 0 or lista_obj_ant[i].width <= 0:
 			lista_obj.remove(lista_obj_ant[i])
-	
+	'''
 		#PJ
 	
 	tecla_pulsada = pygame.key.get_pressed()
@@ -179,6 +183,9 @@ while ON:
 	for i in range(len(lista_enemigos)):
 		lista_enemigos_colisionable = lista_enemigos[:]
 		lista_enemigos_colisionable.remove(lista_enemigos[i])
+		
+		
+		
 		if colision(lista_enemigos[i],lista_obj) or colision(lista_enemigos[i],lista_enemigos_colisionable,c=True):
 			circulo_enemigo_cam_x = circulo(punto(lista_enemigos[i].punto.x,lista_enemigos_gardada[i].punto.y),lista_enemigos[i].radio)
 			if colision(circulo_enemigo_cam_x,lista_obj) or colision(circulo_enemigo_cam_x,lista_enemigos_colisionable,c=True):
@@ -186,7 +193,21 @@ while ON:
 			circulo_enemigo_cam_y = circulo(punto(lista_enemigos_gardada[i].punto.x,lista_enemigos[i].punto.y),lista_enemigos[i].radio)
 			if colision(circulo_enemigo_cam_y,lista_obj) or colision(circulo_enemigo_cam_y,lista_enemigos_colisionable,c=True):
 				lista_enemigos[i].punto.y = lista_enemigos_gardada[i].punto.y
-					
+	'''
+	for i in lista_enemigos:
+		lista_enemigos_colisionable = lista_enemigos[:]
+		lista_enemigos_colisionable.remove(i)
+		if colision(i,lista_enemigos_colisionable,c=True):
+			if not colision(circulo(punto(i.punto.x + 1,i.punto.y),i.radio),lista_enemigos_colisionable,c=True):
+				i.punto.x += 1
+			if not colision(circulo(punto(i.punto.x - 1,i.punto.y),i.radio),lista_enemigos_colisionable,c=True):
+				i.punto.x -= 1
+			if not colision(circulo(punto(i.punto.x,i.punto.y + 1),i.radio),lista_enemigos_colisionable,c=True):
+				i.punto.x += 1
+			if not colision(circulo(punto(i.punto.x,i.punto.y - 1),i.radio),lista_enemigos_colisionable,c=True):
+				i.punto.x -= 1
+	'''
+				
 		#BORRADO DE PROYECTILES
 
 	lista_explosions = lista_explosions + borrado_proyectiles(lista_proyectiles,lista_obj,lista_enemigos,ANCHO_VENTANA,ALTO_VENTANA,MARCO,RADIO_PROYECTILES)[1]
@@ -209,6 +230,7 @@ while ON:
 	bola_pj.punto.x = bola_futuro.punto.x
 	bola_pj.punto.y = bola_futuro.punto.y
 	
+	'''
 	if colision(bola_pj,lista_obj):
 		if not colision(circulo(punto(bola_pj.punto.x + 1,bola_pj.punto.y),bola_pj.radio),lista_obj):
 			bola_pj.punto.x += 1
@@ -218,13 +240,15 @@ while ON:
 			bola_pj.punto.x += 1
 		if not colision(circulo(punto(bola_pj.punto.x,bola_pj.punto.y - 1),bola_pj.radio),lista_obj):
 			bola_pj.punto.x -= 1
-			
+	'''
+	
 		#BALA CONTRA ENEMIGOS
 
 	for i in lista_proyectiles+lista_explosions:
 		lista_col = colision(i[0],lista_enemigos,c=True)
 		if lista_col:
 			for x in lista_col:
+				#lista_sangre.append(x)
 				puntuacion += 10
 				lista_enemigos.remove(x)
 				
@@ -238,6 +262,12 @@ while ON:
 		#RECT PANTALLA
 	
 	pygame.draw.rect(ventana, [245,245,245], rect_pantalla)
+	
+		#SANGRE
+		
+	for i in lista_sangre:
+		pygame.gfxdraw.aacircle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [240,0,0])
+		pygame.gfxdraw.filled_circle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [240,0,0])
 	
 		#RECTANGULOS COLISIONABLES
 		
@@ -332,16 +362,6 @@ while ON:
 				puntuacion = 0
 				time_dec = 0
 				time_seg = 0
-				obj1 = pygame.Rect(int(ANCHO_VENTANA/4.5),int(ALTO_VENTANA/5),80,40)
-				obj2 = pygame.Rect(int(ANCHO_VENTANA/1.3),int(ALTO_VENTANA/3),65,35)
-				obj3 = pygame.Rect(int(ANCHO_VENTANA/1.4),int(ALTO_VENTANA/1.5),35,75)
-				obj4 = pygame.Rect(int(ANCHO_VENTANA/5),int(ALTO_VENTANA/1.2),70,20)
-				lista_obj = [obj1,obj2,obj3,obj4]
-				MARCO = MARCO_INICIAL
-				punto_pj = punto(ANCHO_VENTANA/2 + MARCO, ALTO_VENTANA/2 + MARCO)
-				punto_futuro = punto(ANCHO_VENTANA/2 + MARCO, ALTO_VENTANA/2 + MARCO)
-				bola_pj = circulo(punto_pj,RADIO_BOLA_PJ)
-				bola_futuro = circulo(punto_futuro,RADIO_BOLA_PJ)
 				game_over = False
 		if e.type == pygame.QUIT:
 			pygame.display.quit()
