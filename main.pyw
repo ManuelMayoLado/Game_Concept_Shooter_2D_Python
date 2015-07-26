@@ -29,6 +29,10 @@ lista_enemigos = []
 lista_sangre = []
 
 temporizador_enemigos = 80
+
+rango_temp_min = 40
+rango_temp_max = 100
+
 VELOCIDADE_ENEMIGOS = 2
 
 tempo_recarga = 0
@@ -100,7 +104,10 @@ while ON:
 	if temporizador_enemigos > 0:
 		temporizador_enemigos -= 1
 		
+		
 	#CREACION DE ENEMIGOS
+	
+	
 	
 	if temporizador_enemigos == 0 and len(lista_enemigos) < 15:
 		numero_random = random.randint(0,3)
@@ -112,7 +119,13 @@ while ON:
 			lista_enemigos.append(circulo(punto(-RADIO_BOLA_PJ,random.randint(0, ALTO_VENTANA)),RADIO_BOLA_PJ))
 		if numero_random == 3:
 			lista_enemigos.append(circulo(punto(ANCHO_VENTANA+RADIO_BOLA_PJ,random.randint(0, ALTO_VENTANA)),RADIO_BOLA_PJ))
-		temporizador_enemigos = random.randint(20, 50)
+		temporizador_enemigos = random.randint(int(rango_temp_min), int(rango_temp_max))
+		
+	if rango_temp_max > 10:
+		rango_temp_max -= 0.01
+		
+	if rango_temp_min > 5:
+		rango_temp_min -= 0.01
 	
 	#MOUSE
 	
@@ -162,14 +175,12 @@ while ON:
 		if colision(circulo(punto(bola_pj.punto.x,bola_futuro.punto.y),RADIO_BOLA_PJ),lista_obj):	
 			bola_futuro.punto.y = bola_pj.punto.y
 			
-		#PROYECTILES
-			
-		#MOV
+		#MOVEMENTO PROYECTILES
 		
 	for i in range(len(lista_proyectiles)):
 		lista_proyectiles[i][0].punto += lista_proyectiles[i][1]
 		
-		#ENEMIGOS
+		#MOVEMENTO ENEMIGOS
 	
 	lista_enemigos_gardada = []
 	
@@ -180,12 +191,12 @@ while ON:
 		v = (bola_pj.punto - i.punto)
 		i.punto = i.punto + v * VELOCIDADE_ENEMIGOS / v.longitude()
 			
+			
+		#COLISIONS ENTRE ENEMIGOS
+	
 	for i in range(len(lista_enemigos)):
 		lista_enemigos_colisionable = lista_enemigos[:]
 		lista_enemigos_colisionable.remove(lista_enemigos[i])
-		
-		
-		
 		if colision(lista_enemigos[i],lista_obj) or colision(lista_enemigos[i],lista_enemigos_colisionable,c=True):
 			circulo_enemigo_cam_x = circulo(punto(lista_enemigos[i].punto.x,lista_enemigos_gardada[i].punto.y),lista_enemigos[i].radio)
 			if colision(circulo_enemigo_cam_x,lista_obj) or colision(circulo_enemigo_cam_x,lista_enemigos_colisionable,c=True):
@@ -193,20 +204,6 @@ while ON:
 			circulo_enemigo_cam_y = circulo(punto(lista_enemigos_gardada[i].punto.x,lista_enemigos[i].punto.y),lista_enemigos[i].radio)
 			if colision(circulo_enemigo_cam_y,lista_obj) or colision(circulo_enemigo_cam_y,lista_enemigos_colisionable,c=True):
 				lista_enemigos[i].punto.y = lista_enemigos_gardada[i].punto.y
-	'''
-	for i in lista_enemigos:
-		lista_enemigos_colisionable = lista_enemigos[:]
-		lista_enemigos_colisionable.remove(i)
-		if colision(i,lista_enemigos_colisionable,c=True):
-			if not colision(circulo(punto(i.punto.x + 1,i.punto.y),i.radio),lista_enemigos_colisionable,c=True):
-				i.punto.x += 1
-			if not colision(circulo(punto(i.punto.x - 1,i.punto.y),i.radio),lista_enemigos_colisionable,c=True):
-				i.punto.x -= 1
-			if not colision(circulo(punto(i.punto.x,i.punto.y + 1),i.radio),lista_enemigos_colisionable,c=True):
-				i.punto.x += 1
-			if not colision(circulo(punto(i.punto.x,i.punto.y - 1),i.radio),lista_enemigos_colisionable,c=True):
-				i.punto.x -= 1
-	'''
 				
 		#BORRADO DE PROYECTILES
 
@@ -293,11 +290,11 @@ while ON:
 	#pygame.gfxdraw.aacircle(ventana, int(bola_pj.punto.x), int(bola_pj.punto.y), RADIO_BOLA_PJ, [0,0,0])
 	
 		#ENEMIGOS
-		
+	
 	for i in lista_enemigos:
 		pygame.gfxdraw.aacircle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [0,80,0])
 		pygame.gfxdraw.filled_circle(ventana, int(i.punto.x), int(i.punto.y), i.radio, [0,80,0])
-		
+	
 		#PROYECTILES
 	
 	for i in lista_proyectiles:
