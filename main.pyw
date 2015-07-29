@@ -26,6 +26,7 @@ VELOCIDADE_PROYECTIL = 10
 lista_proyectiles = []
 lista_explosions = []
 lista_enemigos = []
+lista_enemigos_despistados = []
 lista_sangre = []
 
 temporizador_enemigos = 80
@@ -33,7 +34,7 @@ temporizador_enemigos = 80
 rango_temp_min = 40
 rango_temp_max = 100
 
-VELOCIDADE_ENEMIGOS = 2
+VELOCIDADE_ENEMIGOS = 2.5
 
 tempo_recarga = 0
 
@@ -50,10 +51,10 @@ pygame.init()
 
 #LISTA DE OBJETOS COLISIONABLES       random.randint(0, ALTO_VENTANA)
 
-obj1 = pygame.Rect(int(ANCHO_VENTANA/4.5),int(ALTO_VENTANA/5),80,40)
+obj1 = pygame.Rect(int(ANCHO_VENTANA/4.5),int(ALTO_VENTANA/5),70,40)
 obj2 = pygame.Rect(int(ANCHO_VENTANA/1.3),int(ALTO_VENTANA/3),65,35)
 obj3 = pygame.Rect(int(ANCHO_VENTANA/1.4),int(ALTO_VENTANA/1.5),35,75)
-obj4 = pygame.Rect(int(ANCHO_VENTANA/5),int(ALTO_VENTANA/1.2),70,20)
+obj4 = pygame.Rect(int(ANCHO_VENTANA/5),int(ALTO_VENTANA/1.2),60,40)
 
 lista_obj = [obj1,obj2,obj3,obj4]
 			
@@ -67,7 +68,7 @@ game_over = False
 #FONTES DE TEXTO
 
 font_punt = pygame.font.SysFont("System", ANCHO_VENTANA/20)
-font_over = pygame.font.SysFont("System", ANCHO_VENTANA/5)
+font_over = pygame.font.SysFont("System", ANCHO_VENTANA/10)
 
 tamanho_texto_time = 0
 
@@ -104,11 +105,8 @@ while ON:
 	if temporizador_enemigos > 0:
 		temporizador_enemigos -= 1
 		
-		
 	#CREACION DE ENEMIGOS
-	
-	
-	
+
 	if temporizador_enemigos == 0 and len(lista_enemigos) < 15:
 		numero_random = random.randint(0,3)
 		if numero_random == 0:
@@ -191,7 +189,13 @@ while ON:
 		v = (bola_pj.punto - i.punto)
 		i.punto = i.punto + v * VELOCIDADE_ENEMIGOS / v.longitude()
 			
-			
+	#MOVEMENTO ERRATICO DOS ENEMIGOS
+	
+	for i in range(len(lista_enemigos)):
+		if i in lista_enemigos_despistados:
+			v = (punto(random.randint(MARCO,ANCHO_VENTANA-MARCO),random.randint(MARCO,ALTO_VENTANA-MARCO)) - lista_enemigos[i].punto)
+			lista_enemigos[i].punto = lista_enemigos[i].punto + v * VELOCIDADE_ENEMIGOS / v.longitude()
+
 		#COLISIONS ENTRE ENEMIGOS
 	
 	for i in range(len(lista_enemigos)):
@@ -204,6 +208,15 @@ while ON:
 			circulo_enemigo_cam_y = circulo(punto(lista_enemigos_gardada[i].punto.x,lista_enemigos[i].punto.y),lista_enemigos[i].radio)
 			if colision(circulo_enemigo_cam_y,lista_obj) or colision(circulo_enemigo_cam_y,lista_enemigos_colisionable,c=True):
 				lista_enemigos[i].punto.y = lista_enemigos_gardada[i].punto.y
+			
+		#LISTA PARA MOVEMENTO ERRATICO
+		
+	lista_enemigos_despistados = []
+		
+	for i in range(len(lista_enemigos)):
+		if lista_enemigos[i].punto.distancia(lista_enemigos_gardada[i].punto) < 0.1:
+			lista_enemigos_despistados.append(i)
+		
 				
 		#BORRADO DE PROYECTILES
 
@@ -304,11 +317,11 @@ while ON:
 		#PROYECTILES EXPLOTANDO
 
 	for i in lista_explosions:
-		radio = i[0].radio * (abs(15-i[1])+1)/2
+		i[0].radio = RADIO_PROYECTILES * (abs(15-i[1])+1)/2
 		i[1] -= 1
-		pygame.gfxdraw.aacircle(ventana, int(i[0].punto.x), int(i[0].punto.y), radio, [0,0,255])
+		pygame.gfxdraw.aacircle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [0,0,255])
 		if i[1] > 8:
-			pygame.gfxdraw.filled_circle(ventana, int(i[0].punto.x), int(i[0].punto.y), radio, [0,0,0])
+			pygame.gfxdraw.filled_circle(ventana, int(i[0].punto.x), int(i[0].punto.y), i[0].radio, [0,0,0])
 			
 	#PUNTUACION
 	
@@ -325,6 +338,13 @@ while ON:
 	text_punt = font_punt.render(("SCORE: "+str(puntuacion)),True,[0,0,0])
 	ventana.blit(text_punt,[MARCO,MARCO])
 	text_time = font_punt.render(("TIME: "+time_seg_str+":"+time_dec_str),True,[0,0,0])
+	
+	if game_over:
+		color_over = [random.randint(70,150),random.randint(70,150),random.randint(70,150)]
+		text_game_over = font_over.render("GAME OVER", True, color_over)
+		ventana.blit(text_game_over,[(ANCHO_VENTANA-MARCO*2)/2-text_game_over.get_width()/2,(ALTO_VENTANA-MARCO*2)/2-text_game_over.get_height()/2])
+	
+	
 	
 	if time_dec == 0:
 		tamanho_texto_time = text_time.get_width()
@@ -359,6 +379,8 @@ while ON:
 				puntuacion = 0
 				time_dec = 0
 				time_seg = 0
+				rango_temp_min = 40
+				rango_temp_max = 100
 				game_over = False
 		if e.type == pygame.QUIT:
 			pygame.display.quit()
