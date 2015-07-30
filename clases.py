@@ -25,6 +25,13 @@ class punto:
 			return punto(self.x/n,self.y/n)
 		else:
 			return punto(self.x/0.00001,self.y/0.00001)
+	def __getitem__(self,n):
+		if n == 0:
+			return self.x
+		elif n == 1:
+			return self.y
+		else:
+			raise IndexError(n)
 	__truediv__ = __div__
 	
 class circulo:

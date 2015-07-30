@@ -84,6 +84,8 @@ ON = True
 
 while ON:
 
+	reloj = pygame.time.Clock()
+
 	rect_pantalla = pygame.Rect(int(MARCO),int(MARCO),ANCHO_VENTANA-(int(MARCO)*2),ALTO_VENTANA-(int(MARCO)*2))
 
 	if not game_over:
@@ -91,9 +93,6 @@ while ON:
 		if time_dec == 60:
 			time_dec = 0
 			time_seg += 1
-	
-	reloj = pygame.time.Clock()
-
 
 	ventana.fill([0,0,0])
 	
@@ -343,7 +342,6 @@ while ON:
 		color_over = [random.randint(70,150),random.randint(70,150),random.randint(70,150)]
 		text_game_over = font_over.render("GAME OVER", True, color_over)
 		ventana.blit(text_game_over,[(ANCHO_VENTANA-MARCO*2)/2-text_game_over.get_width()/2,(ALTO_VENTANA-MARCO*2)/2-text_game_over.get_height()/2])
-	
 	
 	
 	if time_dec == 0:
